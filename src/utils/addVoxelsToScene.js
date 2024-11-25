@@ -9,6 +9,8 @@ export function addVoxelsToScene(scene, voxels) {
   const voxelMap = new Map();
   const objects = [
     {
+      id: 0,
+      startStep: 0,
       start: {
         x: voxels[voxels.length - 5].x,
         y: voxels[voxels.length - 5].y,
@@ -17,6 +19,8 @@ export function addVoxelsToScene(scene, voxels) {
       goal: { x: voxels[0].x, y: voxels[0].y, z: voxels[0].z },
     },
     {
+      id: 1,
+      startStep: 0,
       start: { x: voxels[0].x, y: voxels[0].y, z: voxels[0].z },
       goal: {
         x: voxels[voxels.length - 1].x,
@@ -25,6 +29,8 @@ export function addVoxelsToScene(scene, voxels) {
       },
     },
     {
+      id: 2,
+      startStep: 0,
       start: { x: voxels[1].x, y: voxels[1].y, z: voxels[1].z },
       goal: {
         x: voxels[voxels.length - 2].x,
@@ -33,6 +39,8 @@ export function addVoxelsToScene(scene, voxels) {
       },
     },
     {
+      id: 3,
+      startStep: 0,
       start: { x: voxels[2].x, y: voxels[2].y, z: voxels[2].z },
       goal: {
         x: voxels[voxels.length - 3].x,
@@ -41,6 +49,8 @@ export function addVoxelsToScene(scene, voxels) {
       },
     },
     {
+      id: 4,
+      startStep: 0,
       start: { x: voxels[3].x, y: voxels[3].y, z: voxels[3].z },
       goal: {
         x: voxels[voxels.length - 4].x,
@@ -50,6 +60,8 @@ export function addVoxelsToScene(scene, voxels) {
     },
 
     {
+      id: 5,
+      startStep: 0,
       start: {
         x: voxels[voxels.length - 61].x,
         y: voxels[voxels.length - 61].y,
@@ -58,6 +70,8 @@ export function addVoxelsToScene(scene, voxels) {
       goal: { x: voxels[15].x, y: voxels[15].y, z: voxels[15].z },
     },
     {
+      id: 6,
+      startStep: 0,
       start: {
         x: voxels[voxels.length - 171].x,
         y: voxels[voxels.length - 171].y,
@@ -66,6 +80,8 @@ export function addVoxelsToScene(scene, voxels) {
       goal: { x: voxels[16].x, y: voxels[16].y, z: voxels[16].z },
     },
     {
+      id: 7,
+      startStep: 0,
       start: {
         x: voxels[voxels.length - 83].x,
         y: voxels[voxels.length - 83].y,
@@ -74,6 +90,8 @@ export function addVoxelsToScene(scene, voxels) {
       goal: { x: voxels[771].x, y: voxels[771].y, z: voxels[771].z },
     },
     {
+      id: 8,
+      startStep: 0,
       start: {
         x: voxels[voxels.length - 81].x,
         y: voxels[voxels.length - 81].y,
@@ -82,6 +100,8 @@ export function addVoxelsToScene(scene, voxels) {
       goal: { x: voxels[11].x, y: voxels[11].y, z: voxels[11].z },
     },
     {
+      id: 9,
+      startStep: 0,
       start: {
         x: voxels[voxels.length - 40].x,
         y: voxels[voxels.length - 40].y,
@@ -96,6 +116,8 @@ export function addVoxelsToScene(scene, voxels) {
     const randomGoalIndex = Math.floor(Math.random() * voxels.length);
 
     objects.push({
+      id: i + 10,
+      startStep: 0,
       start: {
         x: voxels[randomStartIndex].x,
         y: voxels[randomStartIndex].y,
@@ -263,11 +285,7 @@ export function addVoxelsToScene(scene, voxels) {
         // 碰撞检测
         if (
           !voxelMap.has(neighborKey) ||
-          otherPaths.some(
-            (p) =>
-              p[step] === neighborKey ||
-              (step > p.length - 1 && p[p.length - 1] === neighborKey)
-          )
+          otherPaths.some((p) => p.includes(neighborKey))
         )
           return;
 
@@ -285,57 +303,37 @@ export function addVoxelsToScene(scene, voxels) {
     return [];
   }
 
-  // 为每个物体计算路径
+  //初始化
   let allPaths = [];
   let maxPathStep = 0;
+  let nowStep = 0; //当前步数
+  while(allPaths.some((path) => path.length ==0)) {
+    
+  }
+  //将起始点剔除出VoxelMap
+  balls.forEach((obj) => {
+    const startKey = `${obj.start.x},${obj.start.y},${obj.start.z}`;
+    voxelMap.delete(startKey);
+  });
+
+  // 为每个物体计算路径
   balls.forEach((obj, index) => {
     obj.path = findPath(obj.start, obj.goal, allPaths);
     allPaths.push(obj.path.map((pos) => `${pos.x},${pos.y},${pos.z}`));
     maxPathStep = Math.max(maxPathStep, obj.path.length);
   });
 
-  //计算碰撞发生在第几步，即allPaths的path中第几个元素相同
-  let collisionStep = 0;
-  let aa = 0;
-  while (aa < 30) {
-    aa++;
-    collisionStep = 0;
-    let foundCollision = false;
-    for (let i = collisionStep; i < maxPathStep; i++) {
-      const collision = new Set();
-
-      allPaths.forEach((path) => {
-        const key = path[i];
-        if (collision.has(key)) {
-          collisionStep = i;
-          foundCollision = true;
-        } else {
-          collision.add(key);
-        }
-      });
-      if (foundCollision) break;
-    }
-    console.log("collisionStep", collisionStep);
-    //重置allPaths
-
-    allPaths = [];
-    balls.reverse();
-    balls.forEach((obj) => {
-      //替换出发点为碰撞点
-      if (obj.path.length > 0) {
-        if (obj.path.length >= collisionStep) {
-          //更新obj.path为从0到collisionStep的旧路径和新计算的路径
-          obj.path = obj.path
-            .slice(0, collisionStep)
-            .concat(findPath(obj.path[collisionStep-1], obj.goal, allPaths));
-          // console.log("obj.path1", obj.path);
-          allPaths.push(obj.path.map((pos) => `${pos.x},${pos.y},${pos.z}`));
-        } else {
-          allPaths.push(obj.path.map((pos) => `${pos.x},${pos.y},${pos.z}`));
-        }
-      }
+  //将起始点添加回VoxelMap
+  balls.forEach((obj) => {
+    const material = new THREE.MeshBasicMaterial({
+      color:obj.ballColor,
+      transparent: true,
+      opacity: 0.2,
     });
-  }
+    const cube = new THREE.Mesh(geometry, material);
+    const startKey = `${obj.start.x},${obj.start.y},${obj.start.z}`;
+    voxelMap.set(startKey, cube);
+  });
   // 动画逻辑
   function animate() {
     let animationDone = true;
