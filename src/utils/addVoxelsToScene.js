@@ -51,11 +51,11 @@ export function addVoxelsToScene(scene, voxels) {
     {
       id: 4,
       startStep: 3,
-      start: { x: voxels[3].x, y: voxels[3].y, z: voxels[3].z },
+      start: { x: voxels[5].x, y: voxels[5].y, z: voxels[5].z },
       goal: {
-        x: voxels[voxels.length - 4].x,
-        y: voxels[voxels.length - 4].y,
-        z: voxels[voxels.length - 4].z,
+        x: voxels[voxels.length - 62].x,
+        y: voxels[voxels.length - 62].y,
+        z: voxels[voxels.length - 62].z,
       },
     },
 
@@ -111,7 +111,7 @@ export function addVoxelsToScene(scene, voxels) {
     },
   ];
   // 随机添加20条起终点
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 50; i++) {
     const randomStartIndex = Math.floor(Math.random() * voxels.length);
     const randomGoalIndex = Math.floor(Math.random() * voxels.length);
 
@@ -291,9 +291,10 @@ export function addVoxelsToScene(scene, voxels) {
         const neighborKey = `${neighbor.x},${neighbor.y},${neighbor.z}`;
         // 碰撞检测，同时考虑当前步骤是否已经超过物体的开始运动时间
         // console.log("otherPaths", otherPaths);
+      
         if (
           !voxelMap.has(neighborKey) ||
-          otherPaths.some((p) => p.path.includes(neighborKey))
+          otherPaths.some((p) => p.path.some((pos) => pos.x === neighbor.x && pos.y === neighbor.y && pos.z === neighbor.z && p.startStep <= step))
         )
           return;
 
@@ -316,7 +317,7 @@ export function addVoxelsToScene(scene, voxels) {
     const paths = [];
 
     for (let step = 0; step < maxSteps; step++) {
-        console.log("allPaths", paths);
+    //   console.log("allPaths", paths);
 
       for (let i = 0; i < objects.length; i++) {
         const obj = objects[i];
@@ -332,7 +333,8 @@ export function addVoxelsToScene(scene, voxels) {
         ) {
           const start = obj.start;
           const goal = obj.goal;
-          const otherPaths = paths.filter((p, index) => index !== i);
+          //otherPaths为除了当前物体外的其他物体的路径,如果物体已经到达终点，则不加入otherPaths
+          const otherPaths = paths.filter((p, index) => index !== i&&step<p.startStep+p.path.length);
           const path = findPathWithStartTime(
             start,
             goal,
@@ -344,7 +346,7 @@ export function addVoxelsToScene(scene, voxels) {
             paths.push({
               path: path,
               objectId: obj.id,
-              startStep: obj.startStep,
+              startStep: step,
             });
             obj.path = path;
             obj.currentStep = step;
@@ -376,7 +378,7 @@ export function addVoxelsToScene(scene, voxels) {
     const maxSteps = 50;
     console.log("paths", paths);
     for (let i = 0; i < maxSteps; i++) {
-      //将paths中的所有path数组中某一步的体素坐标提取出来
+      //将paths中的所有path数组中某一步的体素坐标提取出来，如果
       const stepVoxels = paths.map((path) => {
         const realStep = i - path.startStep;
         if (
@@ -385,23 +387,26 @@ export function addVoxelsToScene(scene, voxels) {
           path.path[realStep]
         ) {
           //   console.log("path.path[realStep]", path.path[realStep]);
-          return path.path[realStep];
+          return [path.objectId, path.path[realStep]];
+        }
+        if (!path.path[realStep]) {
+          return [path.objectId, path.path[path.path.length - 1]];
         }
       });
       //剔除stepVoxels中的undefined,如果是undefined则删除该元素
       const stepVoxelswithoutUndefined = stepVoxels.filter((v) => v);
-      console.log("stepVoxelswithoutUndefined", stepVoxelswithoutUndefined);
+    //   console.log("stepVoxelswithoutUndefined", stepVoxelswithoutUndefined);
       //计算stepVoxels中出现两次或多次的体素坐标即为碰撞发生的体素坐标
-      const collisionVoxels = stepVoxelswithoutUndefined.filter(
-        (v, index) => stepVoxelswithoutUndefined.indexOf(v) !== index
-      );
-    //   console.log("collisionVoxels", collisionVoxels);
+      const collisionVoxels = stepVoxelswithoutUndefined.filter((v, index) => {
+        return (
+          stepVoxelswithoutUndefined.findIndex((s) => s[1] === v[1]) !== index
+        );
+      });
+        console.log("collisionVoxels", collisionVoxels);
       //如果有碰撞，将碰撞的体素坐标、物体id、碰撞发生的步数存入collision数组
       if (collisionVoxels.length > 0) {
-        collisionVoxels.forEach((voxel) => {
-          const objIndex = stepVoxels.findIndex((v) => v === voxel);
-          const objId = paths[objIndex].objectId;
-          collision.push({ voxel, objId, step: i });
+        collisionVoxels.forEach((v) => {
+          collision.push({ voxel: v[1], objectId: v[0], step: i });
         });
       }
     }
